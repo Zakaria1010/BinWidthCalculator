@@ -1,0 +1,30 @@
+# Ignore all build output
+**/bin/
+**/obj/
+
+# Ignore common temporary and generated files
+*.dll
+*.pdb
+*.exe
+*.cache
+*.log
+*.json
+
+# IDE / VS Code / Visual Studio
+.vs/
+*.user
+*.suo
+*.DS_Store
+
+# NuGet / packages
+*.nupkg
+packages/
+.nuget/
+
+# Secrets / environment
+*.env
+secrets.json
+
+# Docker artifacts
+**/Dockerfile.*
+.dockerignore

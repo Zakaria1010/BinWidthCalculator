@@ -1,0 +1,48 @@
+using Microsoft.EntityFrameworkCore;
+using BinWidthCalculator.Domain.Entities;
+
+namespace BinWidthCalculator.Infrastructure.Data;
+
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    {
+    }
+
+    public DbSet<Order> Orders { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.RequiredBinWidth)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            // Configure owned types for OrderItem
+            entity.OwnsMany(e => e.Items, owned =>
+            {
+                owned.WithOwner().HasForeignKey("OrderId");
+                owned.Property<int>("Id").ValueGeneratedOnAdd();
+                owned.HasKey("Id");
+                
+                owned.Property(oi => oi.ProductType)
+                    .IsRequired()
+                    .HasConversion<string>();
+                
+                owned.Property(oi => oi.Quantity)
+                    .IsRequired();
+            });
+
+            entity.Navigation(e => e.Items)
+                .UsePropertyAccessMode(PropertyAccessMode.Property);
+        });
+    }
+}

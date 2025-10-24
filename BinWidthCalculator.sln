@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinWidthCalculator.API", "BinWidthCalculator.API\BinWidthCalculator.API.csproj", "{08763694-F2D9-4614-961D-D03ACFD8CC4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinWidthCalculator.Tests", "BinWidthCalculator.Tests\BinWidthCalculator.Tests.csproj", "{D3F12BA5-97C5-4D7D-A11B-AD877520F1D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{08763694-F2D9-4614-961D-D03ACFD8CC4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08763694-F2D9-4614-961D-D03ACFD8CC4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08763694-F2D9-4614-961D-D03ACFD8CC4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08763694-F2D9-4614-961D-D03ACFD8CC4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3F12BA5-97C5-4D7D-A11B-AD877520F1D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3F12BA5-97C5-4D7D-A11B-AD877520F1D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3F12BA5-97C5-4D7D-A11B-AD877520F1D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3F12BA5-97C5-4D7D-A11B-AD877520F1D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
