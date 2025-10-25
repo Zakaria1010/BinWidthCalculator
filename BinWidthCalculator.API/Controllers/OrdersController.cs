@@ -1,11 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
-using BinWidthCalculator.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using BinWidthCalculator.Application.Interfaces;
+using BinWidthCalculator.Application.DTOs;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BinWidthCalculator.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] // All endpoints require authentication
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -22,6 +24,9 @@ public class OrdersController : ControllerBase
     {
         try
         {
+            var username = User.Identity?.Name;
+            _logger.LogInformation("User {Username} creating order", username);
+            
             var order = await _orderService.CreateOrderAsync(request);
             return CreatedAtAction(nameof(GetOrder), new { orderId = order.OrderId }, order);
         }
@@ -42,6 +47,9 @@ public class OrdersController : ControllerBase
     {
         try
         {
+            var username = User.Identity?.Name;
+            _logger.LogInformation("User {Username} retrieving order {OrderId}", username, orderId);
+            
             var order = await _orderService.GetOrderAsync(orderId);
             
             if (order == null)
@@ -55,6 +63,23 @@ public class OrdersController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving order {OrderId}", orderId);
             return StatusCode(500, new { error = "An error occurred while retrieving the order" });
+        }
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")] // Only admins can list all orders
+    public async Task<ActionResult<List<OrderResponse>>> GetAllOrders()
+    {
+        try
+        {
+            // This would require adding a new method to IOrderService
+            // For now, returning not implemented
+            return StatusCode(501, new { error = "Not implemented" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving all orders");
+            return StatusCode(500, new { error = "An error occurred while retrieving orders" });
         }
     }
 }

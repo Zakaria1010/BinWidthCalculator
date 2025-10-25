@@ -10,9 +10,11 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Order> Orders { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Order configuration
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -26,7 +28,6 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
 
-            // Configure owned types for OrderItem
             entity.OwnsMany(e => e.Items, owned =>
             {
                 owned.WithOwner().HasForeignKey("OrderId");
@@ -43,6 +44,36 @@ public class ApplicationDbContext : DbContext
 
             entity.Navigation(e => e.Items)
                 .UsePropertyAccessMode(PropertyAccessMode.Property);
+        });
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.Username)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.PasswordHash)
+                .IsRequired();
+
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(e => e.Username).IsUnique();
+            entity.HasIndex(e => e.Email).IsUnique();
         });
     }
 }
