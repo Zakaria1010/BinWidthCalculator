@@ -85,7 +85,28 @@ jobs:
         ports: '80'
         cpu: 1
         memory: 1
+        environment-variables: 'ASPNETCORE_ENVIRONMENT=Production'
 
-    - name: Display deployment URL
+    - name: Wait for container to start
       run: |
-          echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        echo "Waiting 30 seconds for container to start..."
+        sleep 30
+
+    - name: Test basic connectivity
+      run: |
+        URL="https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        echo "Testing connectivity to: $URL"
+        
+        # Try multiple endpoints
+        curl -f "$URL" || echo "Root endpoint not available"
+        curl -f "$URL/health" || echo "Health endpoint not available"
+        curl -f "$URL/swagger" || echo "Swagger endpoint not available"
+        
+        echo "Basic connectivity test completed"
+
+    - name: Display deployment info
+      run: |
+                echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+                echo "If the application is not accessible, check:"
+                echo "1. Container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
+                echo "2. Container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
