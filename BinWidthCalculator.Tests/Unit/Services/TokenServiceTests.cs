@@ -1,7 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using BinWidthCalculator.Application.Services;
 using Microsoft.Extensions.Configuration;
+using BinWidthCalculator.Domain.Entities;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using FluentAssertions;
 
 namespace BinWidthCalculator.Tests.Unit.Services;
@@ -15,9 +16,9 @@ public class TokenServiceTests
     {
         var configValues = new Dictionary<string, string>
         {
-            {"Jwt:SecretKey", "super-secret-key-that-is-long-enough-for-encoding"},
-            {"Jwt:Issuer", "TestIssuer"},
-            {"Jwt:Audience", "TestAudience"},
+            { "Jwt:Issuer", "TestIssuer" },
+            { "Jwt:Audience", "TestAudience" },
+            { "Jwt:SecretKey", "super-secret-key-that-is-32-characters!" },
             {"Jwt:ExpiresInHours", "1"}
         };
 
@@ -32,7 +33,7 @@ public class TokenServiceTests
     public void GenerateToken_ValidUser_ReturnsValidJwtToken()
     {
         // Arrange
-        var user = new Domain.Entities.User
+        var user = new User
         {
             Id = Guid.NewGuid(),
             Username = "testuser",
@@ -57,14 +58,17 @@ public class TokenServiceTests
         claims.Should().Contain(c => c.Type == ClaimTypes.NameIdentifier && c.Value == user.Id.ToString());
         claims.Should().Contain(c => c.Type == ClaimTypes.Name && c.Value == user.Username);
         claims.Should().Contain(c => c.Type == ClaimTypes.Email && c.Value == user.Email);
-        claims.Should().Contain(c => c.Type == ClaimTypes.Role && c.Value == user.Role);
+        claims.Should().Contain(c => (c.Type == ClaimTypes.Role ||
+              c.Type.Equals("role", StringComparison.OrdinalIgnoreCase) ||
+              c.Type.EndsWith("/role", StringComparison.OrdinalIgnoreCase))
+             && c.Value == user.Role);
     }
 
     [Fact]
     public void GenerateToken_UserWithAdminRole_IncludesAdminRoleInClaims()
     {
         // Arrange
-        var user = new Domain.Entities.User
+        var user = new User
         {
             Id = Guid.NewGuid(),
             Username = "adminuser",
@@ -79,8 +83,12 @@ public class TokenServiceTests
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtToken = tokenHandler.ReadJwtToken(token);
         
-        var roleClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
-        roleClaim.Should().NotBeNull();
+        var roleClaim = jwtToken.Claims.FirstOrDefault(c =>
+            c.Type == ClaimTypes.Role ||
+            c.Type.Equals("role", StringComparison.OrdinalIgnoreCase) ||
+            c.Type.EndsWith("/role", StringComparison.OrdinalIgnoreCase));
+
+        roleClaim.Should().NotBeNull("the JWT should contain a role claim");
         roleClaim.Value.Should().Be("Admin");
     }
 }

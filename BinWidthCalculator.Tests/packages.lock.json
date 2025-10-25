@@ -28,6 +28,15 @@
           "Microsoft.Extensions.Hosting": "7.0.1"
         }
       },
+      "Microsoft.AspNetCore.TestHost": {
+        "type": "Direct",
+        "requested": "[7.0.20, )",
+        "resolved": "7.0.20",
+        "contentHash": "RzcyvGFs3JxalEJwoaf1jx0D/3HhhmRDhGLlhEEKAiqVFCKk/vQ5veOi4Rhs86SM46Nm5uBoIeQu70UwbDGiQw==",
+        "dependencies": {
+          "System.IO.Pipelines": "7.0.0"
+        }
+      },
       "Microsoft.EntityFrameworkCore.InMemory": {
         "type": "Direct",
         "requested": "[7.*, )",
@@ -35,6 +44,15 @@
         "contentHash": "7JTLY2EnzE0FDa1IzXvEZxcHgbPBboECY/zCQBuT1Lt+2Yqs5MrW77eNmg0/PPiMj/+HyiF9QaFRKbLUR1jFcw==",
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "7.0.20"
+        }
+      },
+      "Microsoft.Extensions.Configuration.Binder": {
+        "type": "Direct",
+        "requested": "[7.0.3, )",
+        "resolved": "7.0.3",
+        "contentHash": "1eRFwJBrkkncTpvh6mivB8zg4uBVm6+Y6stEJERrVEqZZc8Hvf+N1iIgj2ySYDUQko4J1Gw1rLf1M8bG83F0eA==",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "7.0.0"
         }
       },
       "Microsoft.NET.Test.Sdk": {
@@ -121,14 +139,6 @@
         "contentHash": "yxFvk9BsgL/eDJVsPp0zbUpL73u9uXLYTnWoMBvnJdm8+970YuhM2XWcDOyetjkp8l8z00MHgfYHCRXOnLx/+Q==",
         "dependencies": {
           "Microsoft.OpenApi": "1.4.3"
-        }
-      },
-      "Microsoft.AspNetCore.TestHost": {
-        "type": "Transitive",
-        "resolved": "7.0.20",
-        "contentHash": "RzcyvGFs3JxalEJwoaf1jx0D/3HhhmRDhGLlhEEKAiqVFCKk/vQ5veOi4Rhs86SM46Nm5uBoIeQu70UwbDGiQw==",
-        "dependencies": {
-          "System.IO.Pipelines": "7.0.0"
         }
       },
       "Microsoft.CodeCoverage": {
@@ -245,14 +255,6 @@
         "contentHash": "f34u2eaqIjNO9YLHBz8rozVZ+TcFiFs0F3r7nUJd7FRkVSxk8u4OpoK226mi49MwexHOR2ibP9MFvRUaLilcQQ==",
         "dependencies": {
           "Microsoft.Extensions.Primitives": "7.0.0"
-        }
-      },
-      "Microsoft.Extensions.Configuration.Binder": {
-        "type": "Transitive",
-        "resolved": "7.0.3",
-        "contentHash": "1eRFwJBrkkncTpvh6mivB8zg4uBVm6+Y6stEJERrVEqZZc8Hvf+N1iIgj2ySYDUQko4J1Gw1rLf1M8bG83F0eA==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "7.0.0"
         }
       },
       "Microsoft.Extensions.Configuration.CommandLine": {

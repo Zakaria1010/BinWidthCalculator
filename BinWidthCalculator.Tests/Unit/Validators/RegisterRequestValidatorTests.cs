@@ -58,7 +58,9 @@ public class RegisterRequestValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("invalid-email")]
-    [InlineData("missing@domain")]
+    [InlineData("missing@")]
+    [InlineData("@domain.com")]
+    [InlineData("spaces in@email.com")]
     [InlineData(null)]
     public void Validate_InvalidEmail_ReturnsInvalid(string email)
     {

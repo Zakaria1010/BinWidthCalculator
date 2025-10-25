@@ -10,7 +10,7 @@ public static class TestTokenHelper
     public static string GenerateTestToken(string username = "testuser", string role = "User", Guid? userId = null)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes("super-secret-key-that-is-long-enough-for-encoding");
+        var key = Encoding.UTF8.GetBytes("ThisIsASecretForTestingOnly123!");
         
         var claims = new[]
         {

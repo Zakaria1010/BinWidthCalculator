@@ -1,10 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 namespace BinWidthCalculator.Application.Services;
 
@@ -19,6 +19,8 @@ public class TokenService : ITokenService
 
     public string GenerateToken(User user)
     {
+        JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
+        
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]);
 

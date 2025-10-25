@@ -1,18 +1,26 @@
 using System.Net;
 using System.Text;
+using FluentAssertions;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
+using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using BinWidthCalculator.Application.Interfaces;
+using BinWidthCalculator.Application.Services;
+using Microsoft.AspNetCore.TestHost;
+using BinWidthCalculator.Domain.Interfaces;
+using BinWidthCalculator.Infrastructure.Repositories;
 
 namespace BinWidthCalculator.Tests.Integration;
 
 public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _factory;
+    private readonly IConfiguration _configuration;
     private readonly HttpClient _client;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -21,14 +29,18 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
     public AuthControllerTests(WebApplicationFactory<Program> factory)
     {
+        Environment.SetEnvironmentVariable("Jwt__SecretKey", "super-secret-key-that-is-32-characters!");
+        Environment.SetEnvironmentVariable("Jwt__Issuer", "TestIssuer");
+        Environment.SetEnvironmentVariable("Jwt__Audience", "TestAudience");
+        Environment.SetEnvironmentVariable("Jwt__ExpiresInHours", "1");
+        
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureServices(services =>
             {
-                // Replace database with in-memory for testing
+                // Replace real DB with in-memory DB for testing
                 var descriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                
                 if (descriptor != null)
                     services.Remove(descriptor);
 
@@ -36,9 +48,29 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
                 {
                     options.UseInMemoryDatabase("AuthTestDatabase");
                 });
+
+                 // Ensure IUserRepository is registered
+                if (!services.Any(s => s.ServiceType == typeof(IUserRepository)))
+                {
+                    services.AddScoped<IUserRepository, UserRepository>();
+                }
+
+                // Ensure IAuthService is registered
+                if (!services.Any(s => s.ServiceType == typeof(IAuthService)))
+                {
+                    services.AddScoped<IAuthService, AuthService>();
+                }
+            });
+            // Optionally, disable HTTPS redirection for tests
+            builder.ConfigureTestServices(services =>
+            {
+                services.Configure<Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionOptions>(options =>
+                {
+                    options.RedirectStatusCode = 200; // no redirect
+                    options.HttpsPort = null;
+                });
             });
         });
-        
         _client = _factory.CreateClient();
     }
 
@@ -53,7 +85,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         await context.SaveChangesAsync();
 
         // Add test user
-        var testUser = new Domain.Entities.User
+        var testUser = new User
         {
             Id = Guid.NewGuid(),
             Username = "testuser",

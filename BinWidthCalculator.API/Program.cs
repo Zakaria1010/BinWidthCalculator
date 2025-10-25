@@ -82,9 +82,13 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 // Services
 builder.Services.AddScoped<IBinWidthCalculator, BinWidthCalculatorService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Validators
 builder.Services.AddScoped<IValidator<CreateOrderRequest>, CreateOrderRequestValidator>();
+builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 
 var app = builder.Build();
 
