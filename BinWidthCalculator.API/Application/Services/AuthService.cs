@@ -3,6 +3,7 @@ using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.Interfaces;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
+using BinWidthCalculator.Infrastructure.Security;
 
 namespace BinWidthCalculator.Application.Services;
 
@@ -91,7 +92,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
-            PasswordHash = HashPassword(request.Password),
+            PasswordHash = PasswordHelper.HashPassword(request.Password),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow,
             IsActive = true
@@ -104,12 +105,6 @@ public class AuthService : IAuthService
     public async Task<bool> UserExistsAsync(string username)
     {
         return await _userRepository.UsernameExistsAsync(username);
-    }
-
-    private string HashPassword(string password)
-    {
-        // In production, use BCrypt or similar
-        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(password));
     }
 
     private bool VerifyPassword(string password, string passwordHash)

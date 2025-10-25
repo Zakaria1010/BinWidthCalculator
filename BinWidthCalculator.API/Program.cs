@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Domain.Entities;
+using BinWidthCalculator.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -131,7 +132,7 @@ using (var scope = app.Services.CreateScope())
                 Id = Guid.NewGuid(),
                 Username = "admin",
                 Email = "admin@binwidthcalculator.com",
-                PasswordHash = Convert.ToBase64String(Encoding.UTF8.GetBytes("Admin123!")),
+                PasswordHash = PasswordHelper.HashPassword("Admin123!"),
                 Role = "Admin",
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
