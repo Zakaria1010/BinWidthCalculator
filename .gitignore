@@ -8,7 +8,7 @@
 *.exe
 *.cache
 *.log
-*.json
+
 
 # IDE / VS Code / Visual Studio
 .vs/
