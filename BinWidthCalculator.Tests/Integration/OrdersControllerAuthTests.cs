@@ -13,6 +13,7 @@ using BinWidthCalculator.Infrastructure.Repositories;
 using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Application.Services;
 using BinWidthCalculator.Domain.Entities;
+using BinWidthCalculator.Infrastructure.Security;
 
 namespace BinWidthCalculator.Tests.Integration;
 
@@ -81,7 +82,7 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = Convert.ToBase64String(Encoding.UTF8.GetBytes("TestPassword123")),
+            PasswordHash =  PasswordHelper.HashPassword("TestPassword123"),
             Role = "User",
             CreatedAt = DateTime.UtcNow,
             IsActive = true

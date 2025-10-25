@@ -31,30 +31,19 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        // Validate request
         var validationResult = await _loginValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
-        {
             throw new ValidationException(validationResult.Errors);
-        }
 
-        // Find user
         var user = await _userRepository.GetByUsernameAsync(request.Username);
-        if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
-        {
+        if (user == null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid username or password");
-        }
 
         if (!user.IsActive)
-        {
             throw new UnauthorizedAccessException("Account is deactivated");
-        }
 
-        // Update last login
         user.LastLogin = DateTime.UtcNow;
-        // Note: In a real app, you'd save this update
 
-        // Generate token
         var token = _tokenService.GenerateToken(user);
 
         return new LoginResponse
@@ -68,25 +57,16 @@ public class AuthService : IAuthService
 
     public async Task<bool> RegisterAsync(RegisterRequest request)
     {
-        // Validate request
         var validationResult = await _registerValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
-        {
             throw new ValidationException(validationResult.Errors);
-        }
 
-        // Check if user exists
         if (await _userRepository.UsernameExistsAsync(request.Username))
-        {
             throw new ArgumentException("Username already exists");
-        }
 
         if (await _userRepository.EmailExistsAsync(request.Email))
-        {
             throw new ArgumentException("Email already exists");
-        }
 
-        // Create user
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -105,11 +85,5 @@ public class AuthService : IAuthService
     public async Task<bool> UserExistsAsync(string username)
     {
         return await _userRepository.UsernameExistsAsync(username);
-    }
-
-    private bool VerifyPassword(string password, string passwordHash)
-    {
-        // In production, use BCrypt or similar
-        return passwordHash == Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(password));
     }
 }

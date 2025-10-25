@@ -14,6 +14,7 @@ using BinWidthCalculator.Application.Services;
 using Microsoft.AspNetCore.TestHost;
 using BinWidthCalculator.Domain.Interfaces;
 using BinWidthCalculator.Infrastructure.Repositories;
+using BinWidthCalculator.Infrastructure.Security;
 
 namespace BinWidthCalculator.Tests.Integration;
 
@@ -90,7 +91,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = Convert.ToBase64String(Encoding.UTF8.GetBytes("TestPassword123")),
+            PasswordHash = PasswordHelper.HashPassword("TestPassword123"),
             Role = "User",
             CreatedAt = DateTime.UtcNow,
             IsActive = true
@@ -216,7 +217,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange
         var registerRequest = new RegisterRequest
         {
-            Username = "testuser", // Already exists
+            Username = "testuser", 
             Email = "new@example.com",
             Password = "NewPassword123"
         };
@@ -242,9 +243,9 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange
         var registerRequest = new RegisterRequest
         {
-            Username = "ab", // Too short
+            Username = "ab",
             Email = "invalid-email",
-            Password = "123" // Too weak
+            Password = "123"
         };
 
         var content = new StringContent(

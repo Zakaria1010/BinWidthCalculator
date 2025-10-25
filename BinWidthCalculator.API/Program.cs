@@ -127,6 +127,7 @@ using (var scope = app.Services.CreateScope())
         if (!context.Users.Any())
         {
             var userRepository = services.GetRequiredService<IUserRepository>();
+            
             var defaultUser = new User
             {
                 Id = Guid.NewGuid(),

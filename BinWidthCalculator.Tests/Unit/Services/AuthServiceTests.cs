@@ -1,11 +1,14 @@
+using BinWidthCalculator.Infrastructure.Security;
 using BinWidthCalculator.Application.Services;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.Interfaces;
-using FluentValidation;
 using Microsoft.Extensions.Configuration;
-using Moq;
 using FluentAssertions;
+using FluentValidation;
+using Moq;
+
+
 
 namespace BinWidthCalculator.Tests.Unit.Services;
 
@@ -44,7 +47,7 @@ public class AuthServiceTests
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("password123")),
+            PasswordHash = PasswordHelper.HashPassword("password123"),
             Role = "User",
             IsActive = true
         };
@@ -124,7 +127,7 @@ public class AuthServiceTests
         var user = new User
         {
             Username = "inactiveuser",
-            PasswordHash = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("password")),
+            PasswordHash = PasswordHelper.HashPassword("password"),
             IsActive = false
         };
 
