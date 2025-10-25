@@ -31,9 +31,10 @@ jobs:
         with:
           dotnet-version: 7.0.x
           cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --locked-mode
 
       - name: Build
         run: dotnet build --configuration Release --no-restore
@@ -92,7 +93,7 @@ jobs:
       - name: Print image digest
         run: | 
           echo "Docker image digest:" echo ${{ steps.docker_build.outputs.digest }}
-          
+
   deploy-to-azure:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
