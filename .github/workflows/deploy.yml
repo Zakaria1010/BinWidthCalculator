@@ -85,7 +85,13 @@ jobs:
         ports: '80'
         cpu: 1
         memory: 1
-        environment-variables: 'ASPNETCORE_ENVIRONMENT=Production'
+        environment-variables: |
+          ASPNETCORE_ENVIRONMENT=Production
+          Jwt__Issuer=BinWidthCalculator
+          Jwt__Audience=BinWidthCalculatorUsers
+          Jwt__ExpiresInHours=12
+        secure-environment-variables: |
+          Jwt__Key=${{ secrets.JWT_SECRET_KEY }}
 
     - name: Wait for container to start
       run: |
