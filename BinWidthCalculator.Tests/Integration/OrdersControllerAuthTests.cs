@@ -2,18 +2,19 @@ using System;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using BinWidthCalculator.Application.DTOs;
-using BinWidthCalculator.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using FluentAssertions;
-using BinWidthCalculator.Domain.Interfaces;
-using BinWidthCalculator.Infrastructure.Repositories;
-using BinWidthCalculator.Application.Interfaces;
-using BinWidthCalculator.Application.Services;
+using Microsoft.EntityFrameworkCore;
+using BinWidthCalculator.Domain.DTOs;
+using Microsoft.AspNetCore.Mvc.Testing;
 using BinWidthCalculator.Domain.Entities;
+using BinWidthCalculator.Application.DTOs;
+using BinWidthCalculator.Domain.Interfaces;
+using BinWidthCalculator.Infrastructure.Data;
+using BinWidthCalculator.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
+using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Infrastructure.Security;
+using BinWidthCalculator.Infrastructure.Repositories;
 
 namespace BinWidthCalculator.Tests.Integration;
 
@@ -49,7 +50,12 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
                     options.UseInMemoryDatabase("OrdersAuthTestDatabase");
                 });
 
-                // Ensure IUserRepository and IAuthService are registered
+
+                if (!services.Any(s => s.ServiceType == typeof(IPasswordHasher)))
+                {
+                    services.AddScoped<IPasswordHasher, PasswordHasher>();
+                }
+
                 if (!services.Any(s => s.ServiceType == typeof(IUserRepository)))
                 {
                     services.AddScoped<IUserRepository, UserRepository>();
@@ -70,19 +76,19 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
         // Seed the database with a test user and login to get token
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         
         // Clear any existing data
         context.Users.RemoveRange(context.Users);
         context.Orders.RemoveRange(context.Orders);
         await context.SaveChangesAsync();
-
         // Add test user
         var testUser = new User
         {
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash =  PasswordHelper.HashPassword("TestPassword123"),
+            PasswordHash =  passwordHasher.HashPassword("TestPassword123"),
             Role = "User",
             CreatedAt = DateTime.UtcNow,
             IsActive = true

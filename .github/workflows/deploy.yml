@@ -2,13 +2,13 @@ name: Build, Test and Deploy to Azure
 
 on:
   push:
-    branches: [ main ]
+    branches: [ dev ]
 
 env:
-  REGISTRY_NAME: 'binwidthcalculatoracr'  # Change to your ACR name
+  REGISTRY_NAME: 'binwidthcalculatoracr'
   IMAGE_NAME: 'bin-width-calculator'
   RESOURCE_GROUP: 'binwidthcalculator-rg'
-  CONTAINER_NAME: 'binwidthcalculator-app'
+  CONTAINER_NAME: 'binwidth-app'
 
 jobs:
   build-and-test:
@@ -63,9 +63,10 @@ jobs:
           ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
         cache-from: type=gha
 
-  deploy-to-azure:
+  deploy-to-azure-new-container:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
     - name: Checkout code
@@ -76,16 +77,37 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy to Azure Container Instances
+    - name: Generate short SHA and container name
+      id: generate_names
+      run: |
+        # Get first 8 characters of SHA for shorter names
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+        # Generate unique container name (max 63 chars, alphanumeric and hyphens)
+        CONTAINER_NAME="${{ env.CONTAINER_NAME }}-v2-${SHORT_SHA}"
+        DNS_LABEL="${{ env.CONTAINER_NAME }}-v2-${SHORT_SHA}"
+        
+        # Ensure names meet Azure requirements
+        CONTAINER_NAME=$(echo "$CONTAINER_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+        DNS_LABEL=$(echo "$DNS_LABEL" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+        
+        echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+        echo "dns_label=$DNS_LABEL" >> $GITHUB_OUTPUT
+        echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+        
+        echo "Generated container name: $CONTAINER_NAME"
+        echo "Generated DNS label: $DNS_LABEL"
+        echo "Short SHA: $SHORT_SHA"
+
+    - name: Deploy to NEW Azure Container Instance
       uses: azure/aci-deploy@v1
       with:
         resource-group: ${{ env.RESOURCE_GROUP }}
-        dns-name-label: binwidthcalculator-${{ github.sha }}
+        dns-name-label: ${{ steps.generate_names.outputs.dns_label }}
         image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
         registry-login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
         registry-username: ${{ secrets.ACR_USERNAME }}
         registry-password: ${{ secrets.ACR_PASSWORD }}
-        name: ${{ env.CONTAINER_NAME }}
+        name: ${{ steps.generate_names.outputs.container_name }}
         location: 'eastus'
         os-type: 'Linux'
         ports: '80'
@@ -96,31 +118,87 @@ jobs:
           Jwt__Issuer=BinWidthCalculator
           Jwt__Audience=BinWidthCalculatorUsers
           Jwt__ExpiresInHours=12
-          Jwt__Key=${{ secrets.JWT_SECRET_KEY }}
         secure-environment-variables: |
           Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}
 
-    - name: Wait for container to start
+    - name: Wait for new container to start
       run: |
-        echo "Waiting 45 seconds for container to start..."
+        echo "Waiting 45 seconds for NEW container to start..."
         sleep 45
 
-    - name: Test basic connectivity
+    - name: Test new container connectivity
       run: |
-        URL="https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
-        echo "Testing connectivity to: $URL"
+        NEW_URL="https://${{ steps.generate_names.outputs.dns_label }}.eastus.azurecontainer.io"
+        echo "Testing connectivity to NEW container: $NEW_URL"
         
-        # Try with timeout and continue on failure
-        timeout 30s curl -f "$URL" || echo "Root endpoint not available - continuing"
-        timeout 30s curl -f "$URL/health" || echo "Health endpoint not available - continuing"
-        timeout 30s curl -f "$URL/swagger" || echo "Swagger endpoint not available - continuing"
+        # Test the new container
+        timeout 30s curl -f "$NEW_URL" || echo "New container root endpoint not available - continuing"
+        timeout 30s curl -f "$NEW_URL/health" || echo "New container health endpoint not available - continuing"
+        timeout 30s curl -f "$NEW_URL/swagger" || echo "New container swagger endpoint not available - continuing"
         
-        echo "Connectivity test completed"
+        echo "New container connectivity test completed"
 
-    - name: Display deployment info
+    - name: Run API tests against new container
       run: |
-        echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        NEW_URL="https://${{ steps.generate_names.outputs.dns_label }}.eastus.azurecontainer.io"
+        echo "Running API tests against new container: $NEW_URL"
+        
+        # Test authentication endpoint
+        timeout 30s curl -X POST "$NEW_URL/api/auth/login" \
+          -H "Content-Type: application/json" \
+          -d '{"username": "admin", "password": "Admin123!"}' \
+          --fail || echo "Authentication test failed - continuing"
+        
+        echo "API tests completed"
+
+    - name: Display new deployment info
+      run: |
+        NEW_URL="https://${{ steps.generate_names.outputs.dns_label }}.eastus.azurecontainer.io"
+        echo "NEW Application deployed to: $NEW_URL"
+        echo "Existing application remains running at its original URL"
         echo ""
-        echo "If the application is not accessible, check:"
-        echo "1. Container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
-        echo "2. Container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
+        echo "To switch traffic to new version, update your load balancer or DNS"
+        echo ""
+        echo "Container details:"
+        echo "New Container Name: ${{ steps.generate_names.outputs.container_name }}"
+        echo "To check new container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ steps.generate_names.outputs.container_name }}"
+        echo "To view new container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ steps.generate_names.outputs.container_name }}"
+
+  # Optional: Add a step to clean up old containers (keep last 3 versions)
+  cleanup-old-containers:
+    needs: deploy-to-azure-new-container
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Clean up old container instances (keep last 3)
+      run: |
+        echo "Cleaning up old container instances (keeping last 3)..."
+        
+        # Get all containers with the naming pattern, sorted by creation time
+        containers=$(az container list \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "[?contains(name, '${{ env.CONTAINER_NAME }}-v2-')].{name:name, created:creationTime}" \
+          --order-by creationTime desc \
+          --output tsv)
+        
+        # Skip the first 3 (most recent) and delete the rest
+        count=0
+        echo "$containers" | while read -r name created; do
+          count=$((count + 1))
+          if [ $count -gt 3 ]; then
+            echo "Deleting old container: $name"
+            az container delete \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name "$name" \
+              --yes \
+              --only-show-errors
+          else
+            echo "Keeping container: $name (created: $created)"
+          fi
+        done

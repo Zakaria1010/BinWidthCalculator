@@ -1,5 +1,6 @@
 using BinWidthCalculator.Infrastructure.Security;
 using BinWidthCalculator.Application.Services;
+using BinWidthCalculator.Domain.DTOs;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.Interfaces;
@@ -15,6 +16,7 @@ namespace BinWidthCalculator.Tests.Unit.Services;
 public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
     private readonly Mock<IValidator<LoginRequest>> _loginValidatorMock;
     private readonly Mock<IValidator<RegisterRequest>> _registerValidatorMock;
@@ -24,6 +26,7 @@ public class AuthServiceTests
     public AuthServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
+        _passwordHasherMock = new Mock<IPasswordHasher>();
         _tokenServiceMock = new Mock<ITokenService>();
         _loginValidatorMock = new Mock<IValidator<LoginRequest>>();
         _registerValidatorMock = new Mock<IValidator<RegisterRequest>>();
@@ -31,6 +34,7 @@ public class AuthServiceTests
 
         _authService = new AuthService(
             _userRepositoryMock.Object,
+            _passwordHasherMock.Object,
             _tokenServiceMock.Object,
             _loginValidatorMock.Object,
             _registerValidatorMock.Object,
@@ -47,10 +51,11 @@ public class AuthServiceTests
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = PasswordHelper.HashPassword("password123"),
+            PasswordHash = "hashed_password",
             Role = "User",
             IsActive = true
         };
+        
 
         var validationResult = new FluentValidation.Results.ValidationResult();
         _loginValidatorMock.Setup(v => v.ValidateAsync(loginRequest, default))
@@ -58,6 +63,9 @@ public class AuthServiceTests
 
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync("testuser"))
             .ReturnsAsync(user);
+
+        _passwordHasherMock.Setup(p => p.VerifyPassword("password123", "hashed_password"))
+            .Returns(true);
 
         _tokenServiceMock.Setup(t => t.GenerateToken(user))
             .Returns("jwt-token");
@@ -127,7 +135,6 @@ public class AuthServiceTests
         var user = new User
         {
             Username = "inactiveuser",
-            PasswordHash = PasswordHelper.HashPassword("password"),
             IsActive = false
         };
 
@@ -137,6 +144,9 @@ public class AuthServiceTests
 
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync("inactiveuser"))
             .ReturnsAsync(user);
+
+        _passwordHasherMock.Setup(p => p.VerifyPassword(loginRequest.Password, user.PasswordHash))
+            .Returns(true);
 
         // Act & Assert
         await _authService.Invoking(s => s.LoginAsync(loginRequest))

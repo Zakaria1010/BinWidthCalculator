@@ -44,7 +44,6 @@ public class BinWidthCalculatorService : IBinWidthCalculator
                     throw new ArgumentException($"Unknown product type: {item.ProductType}");
             }
         }
-
         return Math.Round(totalWidth, 2);
     }
 }

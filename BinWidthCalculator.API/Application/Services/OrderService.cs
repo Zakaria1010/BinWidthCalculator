@@ -1,8 +1,8 @@
-using BinWidthCalculator.Application.DTOs;
-using BinWidthCalculator.Application.Interfaces;
-using BinWidthCalculator.Domain.Entities;
-using BinWidthCalculator.Domain.Interfaces;
 using FluentValidation;
+using BinWidthCalculator.Domain.Entities;
+using BinWidthCalculator.Application.DTOs;
+using BinWidthCalculator.Domain.Interfaces;
+using BinWidthCalculator.Application.Interfaces;
 
 namespace BinWidthCalculator.Application.Services;
 
@@ -24,27 +24,21 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
     {
-        // Validate request
         var validationResult = await _validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
             throw new ValidationException(validationResult.Errors);
         }
 
-        // Convert to domain entities
         var orderItems = request.Items.Select(item => 
             new OrderItem(item.ProductType, item.Quantity)).ToList();
 
-        // Calculate required bin width
         var requiredBinWidth = _binWidthCalculator.CalculateRequiredBinWidth(orderItems);
 
-        // Create order
         var order = new Order(Guid.NewGuid(), orderItems, requiredBinWidth);
 
-        // Save order
         var savedOrder = await _orderRepository.AddAsync(order);
 
-        // Convert to response
         return MapToOrderResponse(savedOrder);
     }
 

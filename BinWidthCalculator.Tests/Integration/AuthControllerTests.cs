@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using BinWidthCalculator.Domain.Entities;
+using BinWidthCalculator.Domain.DTOs;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,6 +62,11 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
                 {
                     services.AddScoped<IAuthService, AuthService>();
                 }
+
+                if (!services.Any(s => s.ServiceType == typeof(IPasswordHasher)))
+                {
+                    services.AddScoped<IPasswordHasher, PasswordHasher>();
+                }
             });
             // Optionally, disable HTTPS redirection for tests
             builder.ConfigureTestServices(services =>
@@ -80,6 +86,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         // Seed the database with a test user
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         
         // Clear any existing data
         context.Users.RemoveRange(context.Users);
@@ -91,7 +98,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = PasswordHelper.HashPassword("TestPassword123"),
+            PasswordHash = passwordHasher.HashPassword("TestPassword123"),
             Role = "User",
             CreatedAt = DateTime.UtcNow,
             IsActive = true

@@ -1,15 +1,16 @@
-using BinWidthCalculator.Application.DTOs;
-using BinWidthCalculator.Domain.Entities;
-using BinWidthCalculator.Domain.Interfaces;
 using FluentValidation;
+using BinWidthCalculator.Domain.DTOs;
+using BinWidthCalculator.Domain.DTOs;
+using BinWidthCalculator.Domain.Entities;
 using Microsoft.Extensions.Configuration;
-using BinWidthCalculator.Infrastructure.Security;
+using BinWidthCalculator.Domain.Interfaces;
 
 namespace BinWidthCalculator.Application.Services;
 
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<RegisterRequest> _registerValidator;
@@ -17,12 +18,14 @@ public class AuthService : IAuthService
 
     public AuthService(
         IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IValidator<LoginRequest> loginValidator,
         IValidator<RegisterRequest> registerValidator,
         IConfiguration configuration)
     {
         _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _loginValidator = loginValidator;
         _registerValidator = registerValidator;
@@ -31,20 +34,17 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        // Validate request
         var validationResult = await _loginValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        // Find user
         var user = await _userRepository.GetByUsernameAsync(request.Username);
-        if (user == null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
+        if (user == null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid username or password");
 
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Account is deactivated");
 
-        // Generate token
         var token = _tokenService.GenerateToken(user);
 
         return new LoginResponse
@@ -59,25 +59,22 @@ public class AuthService : IAuthService
 
     public async Task<bool> RegisterAsync(RegisterRequest request)
     {
-        // Validate request
         var validationResult = await _registerValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        // Check if user exists
         if (await _userRepository.UsernameExistsAsync(request.Username))
             throw new ArgumentException("Username already exists");
 
         if (await _userRepository.EmailExistsAsync(request.Email))
             throw new ArgumentException("Email already exists");
 
-        // Create user
         var user = new User
         {
             Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
-            PasswordHash = PasswordHelper.HashPassword(request.Password),
+            PasswordHash = _passwordHasher.HashPassword(request.Password),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow,
             IsActive = true
@@ -87,7 +84,6 @@ public class AuthService : IAuthService
         return true;
     }
 
-    public async Task<bool> UserExistsAsync(string username)
-        => await _userRepository.UsernameExistsAsync(username);
+    public async Task<bool> UserExistsAsync(string username) => await _userRepository.UsernameExistsAsync(username);
 }
 

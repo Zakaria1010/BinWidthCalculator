@@ -14,7 +14,6 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Order configuration
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -46,7 +45,6 @@ public class ApplicationDbContext : DbContext
                 .UsePropertyAccessMode(PropertyAccessMode.Property);
         });
 
-        // User configuration
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);

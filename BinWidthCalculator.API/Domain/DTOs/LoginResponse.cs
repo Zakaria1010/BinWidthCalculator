@@ -1,4 +1,4 @@
-namespace BinWidthCalculator.Application.DTOs;
+namespace BinWidthCalculator.Domain.DTOs;
 
 public class LoginResponse
 {

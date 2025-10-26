@@ -1,4 +1,4 @@
-using BinWidthCalculator.Application.DTOs;
+using BinWidthCalculator.Domain.DTOs;
 using BinWidthCalculator.Domain.Entities;
 
 namespace BinWidthCalculator.Domain.Interfaces;

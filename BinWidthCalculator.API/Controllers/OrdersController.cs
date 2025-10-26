@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
 using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BinWidthCalculator.Controllers;

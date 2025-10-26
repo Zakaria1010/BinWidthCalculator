@@ -22,7 +22,6 @@ public class HealthController : ControllerBase
     {
         try
         {
-            // Check database connectivity
             var canConnect = await _context.Database.CanConnectAsync();
             
             var healthStatus = new

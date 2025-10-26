@@ -1,5 +1,5 @@
-using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.Interfaces;
+using BinWidthCalculator.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
@@ -17,7 +17,6 @@ public class TokenService : ITokenService
 
     public TokenService(IConfiguration configuration)
     {
-        // Support environment variables (e.g., Jwt__Key) and appsettings.json
         _jwtKey = configuration["Jwt__Key"] ?? configuration["Jwt:Key"];
         _jwtIssuer = configuration["Jwt__Issuer"] ?? configuration["Jwt:Issuer"];
         _jwtAudience = configuration["Jwt__Audience"] ?? configuration["Jwt:Audience"];

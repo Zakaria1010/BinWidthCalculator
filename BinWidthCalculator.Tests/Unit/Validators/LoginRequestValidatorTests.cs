@@ -1,5 +1,6 @@
 using BinWidthCalculator.Application.Validators;
 using BinWidthCalculator.Application.DTOs;
+using BinWidthCalculator.Domain.DTOs;
 using FluentAssertions;
 
 namespace BinWidthCalculator.Tests.Unit.Validators;
