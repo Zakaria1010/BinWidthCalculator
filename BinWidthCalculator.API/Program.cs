@@ -20,7 +20,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Bin Width Calculator", Version = "v1" });
+    c.SwaggerDoc("v2", new() { Title = "Bin Width Calculator", Version = "v2" });
     
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -95,7 +95,10 @@ var app = builder.Build();
 
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v2/swagger.json", "Bin Width Calculator API v2");
+    });
 
 
 app.UseHttpsRedirection();

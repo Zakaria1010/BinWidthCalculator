@@ -31,10 +31,12 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
+        // Validate request
         var validationResult = await _loginValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        // Find user
         var user = await _userRepository.GetByUsernameAsync(request.Username);
         if (user == null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid username or password");
@@ -42,14 +44,14 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Account is deactivated");
 
-        user.LastLogin = DateTime.UtcNow;
-
+        // Generate token
         var token = _tokenService.GenerateToken(user);
 
         return new LoginResponse
         {
             Token = token,
-            Expires = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpiresInHours"])),
+            Expires = DateTime.UtcNow.AddHours(
+                Convert.ToDouble(_configuration["Jwt:ExpiresInHours"] ?? "12")),
             Role = user.Role,
             Username = user.Username
         };
@@ -57,16 +59,19 @@ public class AuthService : IAuthService
 
     public async Task<bool> RegisterAsync(RegisterRequest request)
     {
+        // Validate request
         var validationResult = await _registerValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        // Check if user exists
         if (await _userRepository.UsernameExistsAsync(request.Username))
             throw new ArgumentException("Username already exists");
 
         if (await _userRepository.EmailExistsAsync(request.Email))
             throw new ArgumentException("Email already exists");
 
+        // Create user
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -83,7 +88,6 @@ public class AuthService : IAuthService
     }
 
     public async Task<bool> UserExistsAsync(string username)
-    {
-        return await _userRepository.UsernameExistsAsync(username);
-    }
+        => await _userRepository.UsernameExistsAsync(username);
 }
+
