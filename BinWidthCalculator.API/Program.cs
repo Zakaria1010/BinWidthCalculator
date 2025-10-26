@@ -15,13 +15,28 @@ using BinWidthCalculator.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Add configuration sources
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables();
+
+// Validate JWT key presence
+var jwtSecretKey = builder.Configuration["Jwt__Key"] 
+    ?? builder.Configuration["Jwt:SecretKey"];
+
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+{
+    throw new Exception("JWT Key is missing from configuration or environment variables.");
+}
+
+// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v2", new() { Title = "Bin Width Calculator", Version = "v2" });
-    
+
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -29,9 +44,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid token in the text input below."
+        Description = "Enter 'Bearer' [space] and then your valid token."
     });
-    
+
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -48,11 +63,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure Authentication
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] 
-    ?? Environment.GetEnvironmentVariable("Jwt__SecretKey")
-    ?? "fallback-secret-key-that-is-32-characters-long!";
-
+// Configure JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -70,15 +81,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Database - Use environment-specific connection string
-var connectionString = builder.Environment.IsDevelopment() 
+// Database
+var connectionString = builder.Environment.IsDevelopment()
     ? "Data Source=binwidthcalculator.db"
     : "Data Source=/data/binwidthcalculator.db";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// Register services
+// Register services and validators
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBinWidthCalculator, BinWidthCalculatorService>();
@@ -86,51 +97,45 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-// Validators
 builder.Services.AddScoped<IValidator<CreateOrderRequest>, CreateOrderRequestValidator>();
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
 
 var app = builder.Build();
 
+// Swagger
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v2/swagger.json", "Bin Width Calculator API v2");
+});
 
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v2/swagger.json", "Bin Width Calculator API v2");
-    });
-
-
+// Middleware
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Initialize database
+// Seed database
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        
-        // Ensure data directory exists in production
+
         if (!app.Environment.IsDevelopment())
         {
             var dataDir = "/data";
             if (!Directory.Exists(dataDir))
-            {
                 Directory.CreateDirectory(dataDir);
-            }
         }
-        
+
         context.Database.EnsureCreated();
-        
-        // Create default admin user if no users exist
+
         if (!context.Users.Any())
         {
             var userRepository = services.GetRequiredService<IUserRepository>();
-            
             var defaultUser = new User
             {
                 Id = Guid.NewGuid(),
@@ -141,7 +146,6 @@ using (var scope = app.Services.CreateScope())
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-            
             await userRepository.AddAsync(defaultUser);
         }
     }

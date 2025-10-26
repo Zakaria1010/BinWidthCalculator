@@ -10,19 +10,30 @@ namespace BinWidthCalculator.Application.Services;
 
 public class TokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly string _jwtKey;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
+    private readonly double _jwtExpiresInHours;
 
     public TokenService(IConfiguration configuration)
     {
-        _configuration = configuration;
+        // Support environment variables (e.g., Jwt__Key) and appsettings.json
+        _jwtKey = configuration["Jwt__Key"] ?? configuration["Jwt:SecretKey"];
+        _jwtIssuer = configuration["Jwt__Issuer"] ?? configuration["Jwt:Issuer"];
+        _jwtAudience = configuration["Jwt__Audience"] ?? configuration["Jwt:Audience"];
+        _jwtExpiresInHours = double.TryParse(configuration["Jwt__ExpiresInHours"] ?? configuration["Jwt:ExpiresInHours"], out var hours) 
+            ? hours 
+            : 12; // fallback to 12 hours
+
+        if (string.IsNullOrEmpty(_jwtKey))
+            throw new Exception("JWT key is missing. Set Jwt__Key environment variable or appsettings value.");
     }
 
     public string GenerateToken(User user)
     {
         JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
-        
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]);
+        var key = Encoding.UTF8.GetBytes(_jwtKey);
 
         var claims = new[]
         {
@@ -35,9 +46,9 @@ public class TokenService : ITokenService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpiresInHours"])),
-            Issuer = _configuration["Jwt:Issuer"],
-            Audience = _configuration["Jwt:Audience"],
+            Expires = DateTime.UtcNow.AddHours(_jwtExpiresInHours),
+            Issuer = _jwtIssuer,
+            Audience = _jwtAudience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
