@@ -54,6 +54,12 @@ public class OrderService : IOrderService
         return order != null ? MapToOrderResponse(order) : null;
     }
 
+    public async Task<List<OrderResponse>> GetAllOrdersAsync()
+    {
+        var orders = await _orderRepository.GetAllOrdersAsync();
+        return orders.Select(MapToOrderResponse).ToList();
+    }
+
     private static OrderResponse MapToOrderResponse(Order order)
     {
         return new OrderResponse

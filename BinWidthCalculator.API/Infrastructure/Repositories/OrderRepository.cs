@@ -32,4 +32,12 @@ public class OrderRepository : IOrderRepository
     {
         return await _context.Orders.AnyAsync(o => o.Id == orderId);
     }
+
+    public async Task<List<Order>> GetAllOrdersAsync()
+    {
+        return await _context.Orders
+            .Include(o => o.Items)
+            .OrderByDescending(o => o.CreatedAt) 
+            .ToListAsync();
+    }
 }

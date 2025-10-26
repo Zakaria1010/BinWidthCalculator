@@ -6,4 +6,5 @@ public interface IOrderService
 {
     Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request);
     Task<OrderResponse?> GetOrderAsync(Guid orderId);
+    Task<List<OrderResponse>> GetAllOrdersAsync();
 }

@@ -7,7 +7,7 @@ namespace BinWidthCalculator.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // All endpoints require authentication
+[Authorize]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -67,14 +67,13 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")] // Only admins can list all orders
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<OrderResponse>>> GetAllOrders()
     {
         try
         {
-            // This would require adding a new method to IOrderService
-            // For now, returning not implemented
-            return StatusCode(501, new { error = "Not implemented" });
+            var orders = await _orderService.GetAllOrdersAsync();
+            return Ok(orders);
         }
         catch (Exception ex)
         {
