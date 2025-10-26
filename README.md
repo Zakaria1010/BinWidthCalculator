@@ -15,7 +15,7 @@ A **production-ready .NET 7 Web API** for calculating the minimum bin width requ
 - **🐳 Docker Support** — Fully containerized for local or cloud deployment  
 - **⚙️ CI/CD Pipeline** — Automated build, test, and deployment to **Azure Container Instances**  
 - **📘 Swagger Documentation** — Interactive OpenAPI documentation for easy API exploration
-
+- **Deployed Instance** : http://20.237.34.83/swagger/index.html
 
 ## 📁 Project Structure
 
