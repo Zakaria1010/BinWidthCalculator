@@ -66,7 +66,6 @@ jobs:
   deploy-to-azure-new-container:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
-    environment: production
     
     steps:
     - name: Checkout code
@@ -164,7 +163,7 @@ jobs:
         echo "To check new container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ steps.generate_names.outputs.container_name }}"
         echo "To view new container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ steps.generate_names.outputs.container_name }}"
 
-  # Optional: Add a step to clean up old containers (keep last 3 versions)
+  # Optional: Add a step to clean up old containers (keep last 5 versions)
   cleanup-old-containers:
     needs: deploy-to-azure-new-container
     runs-on: ubuntu-latest
@@ -175,30 +174,51 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Clean up old container instances (keep last 3)
+  
+    - name: Clean up old container instances (keep last 5)
       run: |
-        echo "Cleaning up old container instances (keeping last 3)..."
+        echo "Cleaning up old container instances (keeping last 5)..."
         
-        # Get all containers with the naming pattern, sorted by creation time
+        # Get all containers with the naming pattern
         containers=$(az container list \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --query "[?contains(name, '${{ env.CONTAINER_NAME }}-v2-')].{name:name, created:creationTime}" \
-          --order-by creationTime desc \
+          --query "[?contains(name, '${{ env.CONTAINER_NAME }}-v2-')].name" \
           --output tsv)
         
-        # Skip the first 3 (most recent) and delete the rest
-        count=0
-        echo "$containers" | while read -r name created; do
-          count=$((count + 1))
-          if [ $count -gt 3 ]; then
-            echo "Deleting old container: $name"
+        if [ -z "$containers" ]; then
+          echo "No containers found matching the pattern"
+          exit 0
+        fi
+        
+        echo "Found containers:"
+        echo "$containers"
+        
+        # Convert to array
+        container_array=($containers)
+        count=${#container_array[@]}
+        
+        echo "Total containers found: $count"
+        
+        # If we have more than 5 containers, delete the oldest ones
+        # Note: This assumes az container list returns in creation order (newest first)
+        # If order is inconsistent, we might need a different approach
+        if [ $count -gt 5 ]; then
+          containers_to_delete=$((count - 5))
+          echo "Need to delete $containers_to_delete oldest containers"
+          
+          # Delete from the end of the list (assuming list is newest to oldest)
+          # Reverse the logic to delete from the beginning
+          for ((i=0; i<containers_to_delete; i++)); do
+            container_name="${container_array[$i]}"
+            echo "Deleting container ($((i+1)) of $containers_to_delete): $container_name"
             az container delete \
               --resource-group ${{ env.RESOURCE_GROUP }} \
-              --name "$name" \
+              --name "$container_name" \
               --yes \
-              --only-show-errors
-          else
-            echo "Keeping container: $name (created: $created)"
-          fi
-        done
+              --only-show-errors || echo "Failed to delete $container_name, continuing..."
+          done
+        else
+          echo "No cleanup needed (only $count containers found, keeping all)"
+        fi
+        
+        echo "Cleanup completed."
