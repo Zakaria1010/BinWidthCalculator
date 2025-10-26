@@ -29,7 +29,7 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
 
     public OrdersControllerAuthTests(WebApplicationFactory<Program> factory)
     {
-        Environment.SetEnvironmentVariable("Jwt__SecretKey", "super-secret-key-that-is-32-characters!");
+        Environment.SetEnvironmentVariable("Jwt__Key", "super-secret-key-that-is-32-characters!");
         Environment.SetEnvironmentVariable("Jwt__Issuer", "TestIssuer");
         Environment.SetEnvironmentVariable("Jwt__Audience", "TestAudience");
         Environment.SetEnvironmentVariable("Jwt__ExpiresInHours", "1");

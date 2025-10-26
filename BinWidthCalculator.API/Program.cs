@@ -22,8 +22,8 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Validate JWT key presence
-var jwtSecretKey = builder.Configuration["Jwt__Key"] 
-    ?? builder.Configuration["Jwt:SecretKey"];
+var jwtSecretKey = builder.Configuration["Jwt:Key"] 
+    ?? Environment.GetEnvironmentVariable("Jwt__Key");
 
 if (string.IsNullOrWhiteSpace(jwtSecretKey))
 {

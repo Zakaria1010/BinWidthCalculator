@@ -18,7 +18,7 @@ public class TokenService : ITokenService
     public TokenService(IConfiguration configuration)
     {
         // Support environment variables (e.g., Jwt__Key) and appsettings.json
-        _jwtKey = configuration["Jwt__Key"] ?? configuration["Jwt:SecretKey"];
+        _jwtKey = configuration["Jwt__Key"] ?? configuration["Jwt:Key"];
         _jwtIssuer = configuration["Jwt__Issuer"] ?? configuration["Jwt:Issuer"];
         _jwtAudience = configuration["Jwt__Audience"] ?? configuration["Jwt:Audience"];
         _jwtExpiresInHours = double.TryParse(configuration["Jwt__ExpiresInHours"] ?? configuration["Jwt:ExpiresInHours"], out var hours) 

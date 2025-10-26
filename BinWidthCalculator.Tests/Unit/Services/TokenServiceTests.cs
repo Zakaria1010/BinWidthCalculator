@@ -18,7 +18,7 @@ public class TokenServiceTests
         {
             { "Jwt:Issuer", "TestIssuer" },
             { "Jwt:Audience", "TestAudience" },
-            { "Jwt:SecretKey", "super-secret-key-that-is-32-characters!" },
+            { "Jwt:Key", "super-secret-key-that-is-32-characters!" },
             {"Jwt:ExpiresInHours", "1"}
         };
 
