@@ -5,107 +5,120 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY_NAME: 'binwidthcalculatoracr'
+  REGISTRY_NAME: 'binwidthcalculatoracr'  # Change to your ACR name
   IMAGE_NAME: 'bin-width-calculator'
   RESOURCE_GROUP: 'binwidthcalculator-rg'
-  LOCATION: 'eastus'
+  CONTAINER_NAME: 'binwidthcalculator-app'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '7.0.x'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test --configuration Release --no-build --verbosity normal
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
 
   build-and-push-docker:
     needs: build-and-test
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container 
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    - name: Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        cache-from: type=gha
 
   deploy-to-azure:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
     
     steps:
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Deploy new container
-        uses: azure/aci-deploy@v1
-        with:
-          resource-group: ${{ env.RESOURCE_GROUP }}
-          dns-name-label: binwidthcalculator-${{ github.sha }}
-          image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
-          registry-login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
-          registry-username: ${{ secrets.ACR_USERNAME }}
-          registry-password: ${{ secrets.ACR_PASSWORD }}
-          name: binwidthcalculator-app-${{ github.sha }}
-          location: ${{ env.LOCATION }}
-          os-type: 'Linux'
-          ports: '80'
-          cpu: 1
-          memory: 1
-          environment-variables: |
-            ASPNETCORE_ENVIRONMENT=Production
-            Jwt__Issuer=BinWidthCalculator
-            Jwt__Audience=BinWidthCalculatorUsers
-            Jwt__ExpiresInHours=12
-          secure-environment-variables: |
-            Jwt__Key=${{ secrets.JWT_SECRET_KEY }}
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Wait for container to start
-        run: |
-          echo "Waiting 30 seconds for container to start..."
-          sleep 30
+    - name: Deploy to Azure Container Instances
+      uses: azure/aci-deploy@v1
+      with:
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        dns-name-label: binwidthcalculator-${{ github.sha }}
+        image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+        registry-login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
+        registry-username: ${{ secrets.ACR_USERNAME }}
+        registry-password: ${{ secrets.ACR_PASSWORD }}
+        name: ${{ env.CONTAINER_NAME }}
+        location: 'eastus'
+        os-type: 'Linux'
+        ports: '80'
+        cpu: 1
+        memory: 1
+        environment-variables: |
+          ASPNETCORE_ENVIRONMENT=Production
+          Jwt__Issuer=BinWidthCalculator
+          Jwt__Audience=BinWidthCalculatorUsers
+          Jwt__ExpiresInHours=12
+          Jwt__Key=${{ secrets.JWT_SECRET_KEY }}
 
-      - name: Test basic connectivity
-        run: |
-          URL="https://binwidthcalculator-${{ github.sha }}.${{ env.LOCATION }}.azurecontainer.io"
-          echo "Testing connectivity to: $URL"
-          curl -f "$URL" || echo "Root endpoint not available"
-          curl -f "$URL/health" || echo "Health endpoint not available"
-          curl -f "$URL/swagger" || echo "Swagger endpoint not available"
-          echo "Basic connectivity test completed"
+    - name: Wait for container to start
+      run: |
+        echo "Waiting 45 seconds for container to start..."
+        sleep 45
 
-      - name: Display deployment info
-        run: |
-          echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.${{ env.LOCATION }}.azurecontainer.io"
-          echo "Check container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name binwidthcalculator-app-${{ github.sha }}"
-          echo "Check container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name binwidthcalculator-app-${{ github.sha }}"
+    - name: Test basic connectivity
+      run: |
+        URL="https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        echo "Testing connectivity to: $URL"
+        
+        # Try with timeout and continue on failure
+        timeout 30s curl -f "$URL" || echo "Root endpoint not available - continuing"
+        timeout 30s curl -f "$URL/health" || echo "Health endpoint not available - continuing"
+        timeout 30s curl -f "$URL/swagger" || echo "Swagger endpoint not available - continuing"
+        
+        echo "Connectivity test completed"
+
+    - name: Display deployment info
+      run: |
+        echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        echo ""
+        echo "If the application is not accessible, check:"
+        echo "1. Container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
+        echo "2. Container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
