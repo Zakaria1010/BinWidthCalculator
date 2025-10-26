@@ -37,8 +37,8 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during login for username: {Username}", request.Username);
-            return StatusCode(500, new { error = "An error occurred during login" });
+            _logger.LogError(ex, "Login error for {Username}", request.Username);
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 

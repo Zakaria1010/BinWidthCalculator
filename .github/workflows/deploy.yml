@@ -96,7 +96,6 @@ jobs:
           Jwt__Issuer=BinWidthCalculator
           Jwt__Audience=BinWidthCalculatorUsers
           Jwt__ExpiresInHours=12
-        secure-environment-variables: |
           Jwt__Key=${{ secrets.JWT_SECRET_KEY }}
 
     - name: Wait for container to start

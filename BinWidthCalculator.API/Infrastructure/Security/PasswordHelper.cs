@@ -16,6 +16,8 @@ namespace BinWidthCalculator.Infrastructure.Security
 
         public static bool VerifyPassword(string password, string passwordHash)
         {
+            if (string.IsNullOrEmpty(passwordHash))
+                return false;
             var hashedInput = HashPassword(password);
             return hashedInput == passwordHash;
         }
