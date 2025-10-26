@@ -1,4 +1,4 @@
-name: Build, Test and Deploy to Azure
+name: Build, Test, and Deploy to Azure
 
 on:
   push:
@@ -9,11 +9,13 @@ env:
   IMAGE_NAME: 'bin-width-calculator'
   RESOURCE_GROUP: 'binwidthcalculator-rg'
   CONTAINER_NAME: 'binwidthcalculator-app'
+  LOCATION: 'eastus'
 
 jobs:
+  # 🧪 Build & Test
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,16 +28,17 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build
+    - name: Build solution
       run: dotnet build --configuration Release --no-restore
 
-    - name: Test
+    - name: Run tests
       run: dotnet test --configuration Release --no-build --verbosity normal
 
+  # 🐳 Build & Push Docker Image
   build-and-push-docker:
     needs: build-and-test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -56,16 +59,19 @@ jobs:
         tags: |
           ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
           ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        build-args: |
+          DOTNET_ENV=Production
 
+  # 🚀 Deploy to Azure Container Instances
   deploy-to-azure:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Login to Azure
+    - name: Log in to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -74,13 +80,13 @@ jobs:
       uses: azure/aci-deploy@v1
       with:
         resource-group: ${{ env.RESOURCE_GROUP }}
+        location: ${{ env.LOCATION }}
+        name: ${{ env.CONTAINER_NAME }}
         dns-name-label: binwidthcalculator-${{ github.sha }}
         image: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
         registry-login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
         registry-username: ${{ secrets.ACR_USERNAME }}
         registry-password: ${{ secrets.ACR_PASSWORD }}
-        name: ${{ env.CONTAINER_NAME }}
-        location: 'eastus'
         os-type: 'Linux'
         ports: '80'
         cpu: 1
@@ -102,17 +108,14 @@ jobs:
       run: |
         URL="https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
         echo "Testing connectivity to: $URL"
-        
-        # Try multiple endpoints
         curl -f "$URL" || echo "Root endpoint not available"
-        curl -f "$URL/health" || echo "Health endpoint not available"
         curl -f "$URL/swagger" || echo "Swagger endpoint not available"
-        
-        echo "Basic connectivity test completed"
+        echo "Basic connectivity test completed ✅"
 
     - name: Display deployment info
       run: |
-                echo "Application deployed to: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
-                echo "If the application is not accessible, check:"
-                echo "1. Container logs: az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
-                echo "2. Container status: az container show --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
+        echo "✅ Application deployed successfully!"
+        echo "🌐 URL: https://binwidthcalculator-${{ github.sha }}.eastus.azurecontainer.io"
+        echo ""
+        echo "If the app isn't loading, check logs:"
+        echo "az container logs --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}"
