@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using BinWidthCalculator.Domain.DTOs;
-using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Domain.Interfaces;
 
 namespace BinWidthCalculator.API.Controllers;

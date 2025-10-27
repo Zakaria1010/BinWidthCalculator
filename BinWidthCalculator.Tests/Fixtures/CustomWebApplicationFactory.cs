@@ -5,7 +5,6 @@ using BinWidthCalculator.Infrastructure.Data;
 using BinWidthCalculator.Domain.Interfaces;
 using BinWidthCalculator.Infrastructure.Security;
 using BinWidthCalculator.Infrastructure.Repositories;
-using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Application.Services;
 using Microsoft.AspNetCore.Hosting;
 

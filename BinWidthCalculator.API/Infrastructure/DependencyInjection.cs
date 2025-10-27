@@ -1,9 +1,9 @@
+using BinWidthCalculator.Infrastructure.Repositories;
+using BinWidthCalculator.Infrastructure.Security;
+using Microsoft.Extensions.DependencyInjection;
 using BinWidthCalculator.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using BinWidthCalculator.Infrastructure.Data;
-using BinWidthCalculator.Infrastructure.Security;
-using BinWidthCalculator.Infrastructure.Repositories;
-using Microsoft.Extensions.DependencyInjection;
 using BinWidthCalculator.Extensions;
 
 namespace BinWidthCalculator.Infrastructure;

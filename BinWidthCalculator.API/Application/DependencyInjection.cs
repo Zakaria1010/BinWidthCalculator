@@ -1,9 +1,9 @@
-using BinWidthCalculator.Application.Services;
 using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Application.Validators;
+using Microsoft.Extensions.DependencyInjection;
+using BinWidthCalculator.Application.Services;
 using BinWidthCalculator.Domain.Interfaces;
 using BinWidthCalculator.Domain.DTOs;
-using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using BinWidthCalculator.Application.DTOs;
 

@@ -1,12 +1,7 @@
 using System.Text;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc.Testing;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Domain.DTOs;
-using BinWidthCalculator.Application.DTOs;
-using BinWidthCalculator.Application.Interfaces;
-using BinWidthCalculator.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 using BinWidthCalculator.Infrastructure.Data;
 using BinWidthCalculator.Domain.Interfaces;
