@@ -5,6 +5,7 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using BinWidthCalculator.Domain.DTOs;
+using BinWidthCalculator.Tests.Fixtures;
 using Microsoft.AspNetCore.Mvc.Testing;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Application.DTOs;
@@ -15,111 +16,13 @@ using Microsoft.Extensions.DependencyInjection;
 using BinWidthCalculator.Application.Interfaces;
 using BinWidthCalculator.Infrastructure.Security;
 using BinWidthCalculator.Infrastructure.Repositories;
+using BinWidthCalculator.Tests.Integration.Infrastructure;
 
 namespace BinWidthCalculator.Tests.Integration;
 
-public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
+public class OrdersControllerAuthTests : TestBase
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
-    private readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-    private string _authToken = string.Empty;
-
-    public OrdersControllerAuthTests(WebApplicationFactory<Program> factory)
-    {
-        Environment.SetEnvironmentVariable("Jwt__Key", "super-secret-key-that-is-32-characters!");
-        Environment.SetEnvironmentVariable("Jwt__Issuer", "TestIssuer");
-        Environment.SetEnvironmentVariable("Jwt__Audience", "TestAudience");
-        Environment.SetEnvironmentVariable("Jwt__ExpiresInHours", "1");
-        
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                
-                if (descriptor != null)
-                    services.Remove(descriptor);
-
-                services.AddDbContext<ApplicationDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase("OrdersAuthTestDatabase");
-                });
-
-
-                if (!services.Any(s => s.ServiceType == typeof(IPasswordHasher)))
-                {
-                    services.AddScoped<IPasswordHasher, PasswordHasher>();
-                }
-
-                if (!services.Any(s => s.ServiceType == typeof(IUserRepository)))
-                {
-                    services.AddScoped<IUserRepository, UserRepository>();
-                }
-
-                if (!services.Any(s => s.ServiceType == typeof(IAuthService)))
-                {
-                    services.AddScoped<IAuthService, AuthService>();
-                }
-            });
-        });
-        
-        _client = _factory.CreateClient();
-    }
-
-    public async Task InitializeAsync()
-    {
-        // Seed the database with a test user and login to get token
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        
-        // Clear any existing data
-        context.Users.RemoveRange(context.Users);
-        context.Orders.RemoveRange(context.Orders);
-        await context.SaveChangesAsync();
-        // Add test user
-        var testUser = new User
-        {
-            Id = Guid.NewGuid(),
-            Username = "testuser",
-            Email = "test@example.com",
-            PasswordHash =  passwordHasher.HashPassword("TestPassword123"),
-            Role = "User",
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true
-        };
-        
-        context.Users.Add(testUser);
-        await context.SaveChangesAsync();
-
-        // Login to get token
-        var loginRequest = new LoginRequest
-        {
-            Username = "testuser",
-            Password = "TestPassword123"
-        };
-
-        var content = new StringContent(
-            JsonSerializer.Serialize(loginRequest, _jsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
-        var response = await _client.PostAsync("/api/auth/login", content);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent, _jsonOptions);
-        
-        _authToken = loginResponse?.Token ?? string.Empty;
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
+    public OrdersControllerAuthTests(): base("OrdersTestDb") { }
 
     [Fact]
     public async Task CreateOrder_WithoutAuthentication_ReturnsUnauthorized()
@@ -144,6 +47,7 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
 
     [Fact]
     public async Task CreateOrder_WithValidToken_ReturnsCreated()
@@ -243,7 +147,7 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact]
+        [Fact]
     public async Task CreateOrder_ValidRequest_ReturnsCreatedOrder()
     {
         // Arrange - Create a valid order request with multiple products
@@ -364,10 +268,8 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
         var createResponseContent = await createResponse.Content.ReadAsStringAsync();
         var createdOrder = JsonSerializer.Deserialize<OrderResponse>(createResponseContent, _jsonOptions);
 
-        // Act - Get the order that was just created
         var getResponse = await _client.GetAsync($"/api/orders/{createdOrder!.OrderId}");
 
-        // Assert
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var getResponseContent = await getResponse.Content.ReadAsStringAsync();
@@ -379,8 +281,6 @@ public class OrdersControllerAuthTests : IClassFixture<WebApplicationFactory<Pro
         orderResponse.Items.Should().Contain(i => i.ProductType == ProductType.PhotoBook && i.Quantity == 2);
         orderResponse.Items.Should().Contain(i => i.ProductType == ProductType.Mug && i.Quantity == 3);
         
-        // Verify the bin width calculation is correct
-        // 2 PhotoBooks (2 * 19mm = 38mm) + 3 Mugs (1 stack = 94mm) = 132mm
         orderResponse.RequiredBinWidth.Should().Be(132.0m);
     }
 
