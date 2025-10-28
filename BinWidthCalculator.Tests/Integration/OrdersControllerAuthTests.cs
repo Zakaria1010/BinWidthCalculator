@@ -17,13 +17,8 @@ public class OrdersControllerAuthTests : TestBase
     [Fact]
     public async Task CreateOrder_WithoutAuthentication_ReturnsUnauthorized()
     {
-        var orderRequest = new CreateOrderRequest
-        {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.PhotoBook, Quantity = 1 }
-            }
-        };
+        var items  =  new List<OrderItemRequest>()  { new (ProductType.PhotoBook, 1) };
+        var orderRequest = new CreateOrderRequest(items);
 
         var content = new StringContent(
             JsonSerializer.Serialize(orderRequest, _jsonOptions),
@@ -39,14 +34,8 @@ public class OrdersControllerAuthTests : TestBase
     [Fact]
     public async Task CreateOrder_WithValidToken_ReturnsCreated()
     {
-        // Arrange
-        var orderRequest = new CreateOrderRequest
-        {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.PhotoBook, Quantity = 1 }
-            }
-        };
+        var items  =  new List<OrderItemRequest>()  { new (ProductType.PhotoBook, 1) };
+        var orderRequest = new CreateOrderRequest(items);
 
         var content = new StringContent(
             JsonSerializer.Serialize(orderRequest, _jsonOptions),
@@ -73,14 +62,8 @@ public class OrdersControllerAuthTests : TestBase
     [Fact]
     public async Task GetOrder_WithValidToken_ReturnsOrder()
     {
-        // Arrange - First create an order
-        var orderRequest = new CreateOrderRequest
-        {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.Calendar, Quantity = 1 }
-            }
-        };
+        var items  =  new List<OrderItemRequest>()  { new (ProductType.Calendar, 1) };
+        var orderRequest = new CreateOrderRequest(items);
 
         var createContent = new StringContent(
             JsonSerializer.Serialize(orderRequest, _jsonOptions),
@@ -137,19 +120,18 @@ public class OrdersControllerAuthTests : TestBase
     [Fact]
     public async Task CreateOrder_ValidRequest_ReturnsCreatedOrder()
     {
-        // Arrange - Create a valid order request with multiple products
-        var validOrderRequest = new CreateOrderRequest
-        {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.PhotoBook, Quantity = 1 },      // 19mm
-                new() { ProductType = ProductType.Calendar, Quantity = 2 },       // 20mm (2 * 10mm)
-                new() { ProductType = ProductType.Canvas, Quantity = 1 },         // 16mm
-                new() { ProductType = ProductType.Cards, Quantity = 3 },          // 14.1mm (3 * 4.7mm)
-                new() { ProductType = ProductType.Mug, Quantity = 5 }             // 188mm (2 stacks: 2 * 94mm)
-                // Total: 19 + 20 + 16 + 14.1 + 188 = 257.1mm
-            }
+        var validItems  =  new List<OrderItemRequest>()  
+        { 
+            new (ProductType.PhotoBook, 1),  // 19mm
+            new (ProductType.Calendar, 2),   // 20mm (2 * 10mm)
+            new (ProductType.Canvas, 1),     // 16mm
+            new (ProductType.Cards, 3),      // 14.1mm (3 * 4.7mm)
+            new (ProductType.Mug, 5)        // 188mm (2 stacks: 2 * 94mm)
+            // Total: 19 + 20 + 16 + 14.1 + 188 = 257.1mm
         };
+
+        // Arrange - Create a valid order request with multiple products
+        var validOrderRequest = new CreateOrderRequest(validItems);
 
         var content = new StringContent(
             JsonSerializer.Serialize(validOrderRequest, _jsonOptions),
@@ -199,14 +181,13 @@ public class OrdersControllerAuthTests : TestBase
     public async Task CreateOrder_InvalidRequest_ReturnsBadRequest()
     {
         // Arrange - Create an invalid order request
-        var invalidOrderRequest = new CreateOrderRequest
-        {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.PhotoBook, Quantity = 0 }, // Invalid quantity
-                new() { ProductType = (ProductType)99, Quantity = 1 } // Invalid product type
-            }
+        var invalidItems  =  new List<OrderItemRequest>()  
+        { 
+            new (ProductType.PhotoBook, 0), // Invalid quantity
+            new ((ProductType)99, 1) // Invalid product type
         };
+
+        var invalidOrderRequest = new CreateOrderRequest(invalidItems);
 
         var content = new StringContent(
             JsonSerializer.Serialize(invalidOrderRequest, _jsonOptions),
@@ -234,14 +215,12 @@ public class OrdersControllerAuthTests : TestBase
     public async Task GetOrder_ExistingOrder_ReturnsOrder()
     {
         // Arrange - First create an order
-        var orderRequest = new CreateOrderRequest
+        var items = new List<OrderItemRequest>
         {
-            Items = new List<OrderItemRequest>
-            {
-                new() { ProductType = ProductType.PhotoBook, Quantity = 2 },
-                new() { ProductType = ProductType.Mug, Quantity = 3 }
-            }
+            new(ProductType.PhotoBook, 2 ),
+            new(ProductType.Mug, 3)
         };
+        var orderRequest = new CreateOrderRequest(items);
 
         var createContent = new StringContent(
             JsonSerializer.Serialize(orderRequest, _jsonOptions),

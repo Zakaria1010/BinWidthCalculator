@@ -47,14 +47,8 @@ public class AuthService : IAuthService
 
         var token = _tokenService.GenerateToken(user);
 
-        return new LoginResponse
-        {
-            Token = token,
-            Expires = DateTime.UtcNow.AddHours(
-                Convert.ToDouble(_configuration["Jwt:ExpiresInHours"] ?? "12")),
-            Role = user.Role,
-            Username = user.Username
-        };
+        return new LoginResponse(token, DateTime.UtcNow.AddHours(
+                Convert.ToDouble(_configuration["Jwt:ExpiresInHours"] ?? "12")), user.Role, user.Username);
     }
 
     public async Task<bool> RegisterAsync(RegisterRequest request)

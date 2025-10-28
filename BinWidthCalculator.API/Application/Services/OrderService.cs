@@ -56,15 +56,8 @@ public class OrderService : IOrderService
 
     private static OrderResponse MapToOrderResponse(Order order)
     {
-        return new OrderResponse
-        {
-            OrderId = order.Id,
-            Items = order.Items.Select(item => new OrderItemResponse
-            {
-                ProductType = item.ProductType,
-                Quantity = item.Quantity
-            }).ToList(),
-            RequiredBinWidth = order.RequiredBinWidth
-        };
+        return new OrderResponse(order.Id, 
+            order.Items.Select(item => new OrderItemResponse(item.ProductType, item.Quantity)).ToList(), 
+            order.RequiredBinWidth);
     }
 }

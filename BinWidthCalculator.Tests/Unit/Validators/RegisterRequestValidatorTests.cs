@@ -17,13 +17,7 @@ public class RegisterRequestValidatorTests
     public void Validate_ValidRequest_ReturnsValid()
     {
         // Arrange
-        var request = new RegisterRequest
-        {
-            Username = "validuser",
-            Email = "valid@example.com",
-            Password = "ValidPassword123",
-            Role = "User"
-        };
+        var request = new RegisterRequest("validuser", "valid@example.com", "ValidPassword123", "User");
 
         // Act
         var result = _validator.Validate(request);
@@ -40,12 +34,7 @@ public class RegisterRequestValidatorTests
     public void Validate_InvalidUsername_ReturnsInvalid(string username)
     {
         // Arrange
-        var request = new RegisterRequest
-        {
-            Username = username,
-            Email = "valid@example.com",
-            Password = "ValidPassword123"
-        };
+        var request = new RegisterRequest(username, "valid@example.com", "ValidPassword123");
 
         // Act
         var result = _validator.Validate(request);
@@ -65,12 +54,7 @@ public class RegisterRequestValidatorTests
     public void Validate_InvalidEmail_ReturnsInvalid(string email)
     {
         // Arrange
-        var request = new RegisterRequest
-        {
-            Username = "validuser",
-            Email = email,
-            Password = "ValidPassword123"
-        };
+        var request = new RegisterRequest("validuser", email, "ValidPassword123");
 
         // Act
         var result = _validator.Validate(request);
@@ -90,12 +74,7 @@ public class RegisterRequestValidatorTests
     public void Validate_InvalidPassword_ReturnsInvalid(string password)
     {
         // Arrange
-        var request = new RegisterRequest
-        {
-            Username = "validuser",
-            Email = "valid@example.com",
-            Password = password
-        };
+        var request = new RegisterRequest("validuser", "valid@example.com", password);
 
         // Act
         var result = _validator.Validate(request);
@@ -112,13 +91,7 @@ public class RegisterRequestValidatorTests
     public void Validate_InvalidRole_ReturnsInvalid(string role)
     {
         // Arrange
-        var request = new RegisterRequest
-        {
-            Username = "validuser",
-            Email = "valid@example.com",
-            Password = "ValidPassword123",
-            Role = role
-        };
+        var request = new RegisterRequest("validuser", "valid@example.com", "ValidPassword123", role);
 
         // Act
         var result = _validator.Validate(request);
