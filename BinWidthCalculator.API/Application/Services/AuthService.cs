@@ -11,10 +11,10 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IConfiguration _configuration;
     private readonly ITokenService _tokenService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<RegisterRequest> _registerValidator;
-    private readonly IConfiguration _configuration;
 
     public AuthService(
         IUserRepository userRepository,
