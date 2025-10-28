@@ -32,9 +32,4 @@ public static class TestTokenHelper
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
-
-    public static string GenerateAdminToken()
-    {
-        return GenerateTestToken("admin", "Admin");
-    }
 }

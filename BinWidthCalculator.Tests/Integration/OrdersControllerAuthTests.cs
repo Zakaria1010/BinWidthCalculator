@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using System.Net.Http.Headers;
 using BinWidthCalculator.Domain.Entities;
 using BinWidthCalculator.Application.DTOs;
 using BinWidthCalculator.Tests.Integration.Infrastructure;
@@ -16,7 +17,6 @@ public class OrdersControllerAuthTests : TestBase
     [Fact]
     public async Task CreateOrder_WithoutAuthentication_ReturnsUnauthorized()
     {
-        // Arrange
         var orderRequest = new CreateOrderRequest
         {
             Items = new List<OrderItemRequest>
@@ -30,10 +30,8 @@ public class OrdersControllerAuthTests : TestBase
             Encoding.UTF8,
             "application/json");
 
-        // Act - Don't set authorization header
         var response = await _client.PostAsync("/api/orders", content);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -56,7 +54,7 @@ public class OrdersControllerAuthTests : TestBase
             "application/json");
 
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         // Act
         var response = await _client.PostAsync("/api/orders", content);
@@ -90,7 +88,7 @@ public class OrdersControllerAuthTests : TestBase
             "application/json");
 
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         var createResponse = await _client.PostAsync("/api/orders", createContent);
         var createResponseContent = await createResponse.Content.ReadAsStringAsync();
@@ -127,7 +125,7 @@ public class OrdersControllerAuthTests : TestBase
     {
         // Arrange
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         // Act - Regular user trying to access admin endpoint
         var response = await _client.GetAsync("/api/orders");
@@ -136,7 +134,7 @@ public class OrdersControllerAuthTests : TestBase
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-        [Fact]
+    [Fact]
     public async Task CreateOrder_ValidRequest_ReturnsCreatedOrder()
     {
         // Arrange - Create a valid order request with multiple products
@@ -159,7 +157,7 @@ public class OrdersControllerAuthTests : TestBase
             "application/json");
 
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         // Act
         var response = await _client.PostAsync("/api/orders", content);
@@ -216,7 +214,7 @@ public class OrdersControllerAuthTests : TestBase
             "application/json");
 
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         // Act
         var response = await _client.PostAsync("/api/orders", content);
@@ -251,7 +249,7 @@ public class OrdersControllerAuthTests : TestBase
             "application/json");
 
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         var createResponse = await _client.PostAsync("/api/orders", createContent);
         var createResponseContent = await createResponse.Content.ReadAsStringAsync();
@@ -280,7 +278,7 @@ public class OrdersControllerAuthTests : TestBase
         var nonExistentOrderId = Guid.NewGuid();
         
         _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _authToken);
+            new AuthenticationHeaderValue("Bearer", _authToken);
 
         // Act - Try to get an order that doesn't exist
         var response = await _client.GetAsync($"/api/orders/{nonExistentOrderId}");
@@ -290,5 +288,16 @@ public class OrdersControllerAuthTests : TestBase
         
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain($"Order with ID {nonExistentOrderId} not found");
+    }
+
+    [Fact]
+    public async Task GetAllOrders_AsAdminUser_ReturnsOrders()
+    {
+        await LoginAsAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _authToken);
+
+        // Test admin-only endpoint
+        var response = await _client.GetAsync("/api/orders");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

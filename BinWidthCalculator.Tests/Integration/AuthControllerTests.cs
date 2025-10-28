@@ -78,17 +78,14 @@ public class AuthControllerTests : TestBase
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await _client.PostAsync("/api/auth/login", content);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task Register_ValidRequest_ReturnsSuccess()
     {
-        // Arrange
         var registerRequest = new RegisterRequest
         {
             Username = "newuser",
@@ -102,10 +99,8 @@ public class AuthControllerTests : TestBase
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await _client.PostAsync("/api/auth/register", content);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -115,7 +110,6 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_DuplicateUsername_ReturnsBadRequest()
     {
-        // Arrange
         var registerRequest = new RegisterRequest
         {
             Username = "testuser", 
@@ -128,10 +122,8 @@ public class AuthControllerTests : TestBase
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await _client.PostAsync("/api/auth/register", content);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -141,7 +133,6 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_InvalidRequest_ReturnsBadRequest()
     {
-        // Arrange
         var registerRequest = new RegisterRequest
         {
             Username = "ab",
@@ -154,10 +145,8 @@ public class AuthControllerTests : TestBase
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await _client.PostAsync("/api/auth/register", content);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         
         var responseContent = await response.Content.ReadAsStringAsync();

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using BinWidthCalculator.Infrastructure.Data;
 using BinWidthCalculator.Domain.Interfaces;
 using BinWidthCalculator.Tests.Fixtures;
+using System.Net.Http.Headers;
 
 namespace BinWidthCalculator.Tests.Integration.Infrastructure;
 
@@ -24,7 +25,6 @@ public abstract class TestBase : IAsyncLifetime
         Environment.SetEnvironmentVariable("Jwt__ExpiresInHours", "1");
 
         _factory = new CustomWebApplicationFactory{ DbName = databaseName };
-
         _client = _factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
@@ -33,10 +33,16 @@ public abstract class TestBase : IAsyncLifetime
     {
         await ResetDatabaseAsync();
         await SeedTestUserAsync();
+        await SeedAdminUserAsync();
         await LoginTestUserAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync()
+    {
+        _factory?.Dispose();
+        _client?.Dispose();
+        return Task.CompletedTask;
+    }    
 
     private async Task ResetDatabaseAsync()
     {
@@ -68,7 +74,28 @@ public abstract class TestBase : IAsyncLifetime
         await context.SaveChangesAsync();
     }
 
-    private async Task LoginTestUserAsync()
+    private async Task SeedAdminUserAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+
+        var adminUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "admin",
+            Email = "admin@example.com",
+            PasswordHash = passwordHasher.HashPassword("Admin123!"),
+            Role = "Admin",
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+        
+        context.Users.Add(adminUser);
+        await context.SaveChangesAsync();
+    }
+
+    protected async Task LoginTestUserAsync()
     {
         var loginRequest = new LoginRequest
         {
@@ -87,5 +114,33 @@ public abstract class TestBase : IAsyncLifetime
         var responseContent = await response.Content.ReadAsStringAsync();
         var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent, _jsonOptions);
         _authToken = loginResponse?.Token ?? string.Empty;
+    }
+
+    protected async Task LoginAsAdminAsync()
+    {
+        var loginRequest = new LoginRequest
+        {
+            Username = "admin", 
+            Password = "Admin123!"
+        };
+
+        var response = await _client.PostAsync("/api/auth/login",
+            new StringContent(JsonSerializer.Serialize(loginRequest, _jsonOptions), Encoding.UTF8, "application/json"));
+        
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent, _jsonOptions);
+        _authToken = loginResponse?.Token ?? string.Empty;
+
+        SetAuthenticationHeader(_authToken);
+    } 
+    
+    protected void SetAuthenticationHeader(string token)
+    {
+        if (!string.IsNullOrEmpty(token))
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
     }
 }
