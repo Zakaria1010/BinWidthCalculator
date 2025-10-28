@@ -14,11 +14,7 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Login_ValidCredentials_ReturnsToken()
     {
-        var loginRequest = new LoginRequest
-        {
-            Username = "testuser",
-            Password = "TestPassword123"
-        };
+        var loginRequest = new LoginRequest("testuser", "TestPassword123");
 
         var content = new StringContent(
             JsonSerializer.Serialize(loginRequest, _jsonOptions),
@@ -42,11 +38,7 @@ public class AuthControllerTests : TestBase
     public async Task Login_InvalidCredentials_ReturnsUnauthorized()
     {
         // Arrange
-        var loginRequest = new LoginRequest
-        {
-            Username = "testuser",
-            Password = "WrongPassword"
-        };
+        var loginRequest = new LoginRequest("testuser", "WrongPassword");
 
         var content = new StringContent(
             JsonSerializer.Serialize(loginRequest, _jsonOptions),
@@ -67,11 +59,7 @@ public class AuthControllerTests : TestBase
     public async Task Login_NonExistentUser_ReturnsUnauthorized()
     {
         // Arrange
-        var loginRequest = new LoginRequest
-        {
-            Username = "nonexistent",
-            Password = "password"
-        };
+        var loginRequest = new LoginRequest("nonexistent", "password");
 
         var content = new StringContent(
             JsonSerializer.Serialize(loginRequest, _jsonOptions),
@@ -86,13 +74,7 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_ValidRequest_ReturnsSuccess()
     {
-        var registerRequest = new RegisterRequest
-        {
-            Username = "newuser",
-            Email = "newuser@example.com",
-            Password = "NewPassword123",
-            Role = "User"
-        };
+        var registerRequest = new RegisterRequest("newuser", "newuser@example.com", "NewPassword123", "User");
 
         var content = new StringContent(
             JsonSerializer.Serialize(registerRequest, _jsonOptions),
@@ -110,12 +92,7 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_DuplicateUsername_ReturnsBadRequest()
     {
-        var registerRequest = new RegisterRequest
-        {
-            Username = "testuser", 
-            Email = "new@example.com",
-            Password = "NewPassword123"
-        };
+        var registerRequest = new RegisterRequest("testuser", "new@example.com", "NewPassword123");
 
         var content = new StringContent(
             JsonSerializer.Serialize(registerRequest, _jsonOptions),
@@ -133,12 +110,7 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_InvalidRequest_ReturnsBadRequest()
     {
-        var registerRequest = new RegisterRequest
-        {
-            Username = "ab",
-            Email = "invalid-email",
-            Password = "123"
-        };
+        var registerRequest = new RegisterRequest("ab", "invalid-email", "123");
 
         var content = new StringContent(
             JsonSerializer.Serialize(registerRequest, _jsonOptions),

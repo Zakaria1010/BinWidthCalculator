@@ -97,11 +97,7 @@ public abstract class TestBase : IAsyncLifetime
 
     protected async Task LoginTestUserAsync()
     {
-        var loginRequest = new LoginRequest
-        {
-            Username = "testuser",
-            Password = "TestPassword123"
-        };
+        var loginRequest = new LoginRequest("testuser", "TestPassword123");
 
         var content = new StringContent(
             JsonSerializer.Serialize(loginRequest, _jsonOptions),
@@ -118,11 +114,7 @@ public abstract class TestBase : IAsyncLifetime
 
     protected async Task LoginAsAdminAsync()
     {
-        var loginRequest = new LoginRequest
-        {
-            Username = "admin", 
-            Password = "Admin123!"
-        };
+        var loginRequest = new LoginRequest("admin", "Admin123!");
 
         var response = await _client.PostAsync("/api/auth/login",
             new StringContent(JsonSerializer.Serialize(loginRequest, _jsonOptions), Encoding.UTF8, "application/json"));

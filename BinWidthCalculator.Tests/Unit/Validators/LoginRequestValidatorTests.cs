@@ -18,11 +18,7 @@ public class LoginRequestValidatorTests
     public void Validate_ValidRequest_ReturnsValid()
     {
         // Arrange
-        var request = new LoginRequest
-        {
-            Username = "validuser",
-            Password = "validpassword123"
-        };
+        var request = new LoginRequest("validuser", "validpassword123");
 
         // Act
         var result = _validator.Validate(request);
@@ -38,12 +34,8 @@ public class LoginRequestValidatorTests
     public void Validate_InvalidUsername_ReturnsInvalid(string username)
     {
         // Arrange
-        var request = new LoginRequest
-        {
-            Username = username,
-            Password = "validpassword123"
-        };
-
+        var request = new LoginRequest(username, "validpassword123");
+        
         // Act
         var result = _validator.Validate(request);
 
@@ -59,11 +51,7 @@ public class LoginRequestValidatorTests
     public void Validate_InvalidPassword_ReturnsInvalid(string password)
     {
         // Arrange
-        var request = new LoginRequest
-        {
-            Username = "validuser",
-            Password = password
-        };
+        var request = new LoginRequest("validuser", password);
 
         // Act
         var result = _validator.Validate(request);

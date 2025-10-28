@@ -28,7 +28,7 @@ public static class DbSeeder
 
             context.Database.EnsureCreated();
 
-            // ✅ Seed default admin user
+            // Seed default admin user
             if (!context.Users.Any())
             {
                 var admin = new User
@@ -78,14 +78,14 @@ public static class DbSeeder
                     await orderRepository.AddAsync(order);
                 }
 
-                logger.LogInformation("✅ Sample orders seeded successfully.");
+                logger.LogInformation("Sample orders seeded successfully.");
             }
 
-            logger.LogInformation("✅ Database seeding completed successfully.");
+            logger.LogInformation("Database seeding completed successfully.");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "❌ An error occurred during database seeding.");
+            logger.LogError(ex, "An error occurred during database seeding.");
         }
     }
 }

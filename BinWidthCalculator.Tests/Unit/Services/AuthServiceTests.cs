@@ -45,7 +45,7 @@ public class AuthServiceTests
     public async Task LoginAsync_ValidCredentials_ReturnsLoginResponse()
     {
         // Arrange
-        var loginRequest = new LoginRequest { Username = "testuser", Password = "password123" };
+        var loginRequest = new LoginRequest("testuser", "password123");
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -87,7 +87,7 @@ public class AuthServiceTests
     public async Task LoginAsync_InvalidPassword_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var loginRequest = new LoginRequest { Username = "testuser", Password = "wrongpassword" };
+        var loginRequest = new LoginRequest("testuser", "wrongpassword");
         var user = new User
         {
             Username = "testuser",
@@ -112,7 +112,7 @@ public class AuthServiceTests
     public async Task LoginAsync_UserNotFound_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var loginRequest = new LoginRequest { Username = "nonexistent", Password = "password" };
+        var loginRequest = new LoginRequest("nonexistent", "password");
 
         var validationResult = new FluentValidation.Results.ValidationResult();
         _loginValidatorMock.Setup(v => v.ValidateAsync(loginRequest, default))
@@ -131,7 +131,7 @@ public class AuthServiceTests
     public async Task LoginAsync_InactiveUser_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var loginRequest = new LoginRequest { Username = "inactiveuser", Password = "password" };
+        var loginRequest = new LoginRequest("inactiveuser", "password");
         var user = new User
         {
             Username = "inactiveuser",
@@ -158,13 +158,7 @@ public class AuthServiceTests
     public async Task RegisterAsync_ValidRequest_ReturnsTrue()
     {
         // Arrange
-        var registerRequest = new RegisterRequest
-        {
-            Username = "newuser",
-            Email = "newuser@example.com",
-            Password = "Password123",
-            Role = "User"
-        };
+        var registerRequest = new RegisterRequest("newuser", "newuser@example.com", "Password123", "User");
 
         var validationResult = new FluentValidation.Results.ValidationResult();
         _registerValidatorMock.Setup(v => v.ValidateAsync(registerRequest, default))
@@ -196,12 +190,7 @@ public class AuthServiceTests
     public async Task RegisterAsync_UsernameExists_ThrowsArgumentException()
     {
         // Arrange
-        var registerRequest = new RegisterRequest
-        {
-            Username = "existinguser",
-            Email = "new@example.com",
-            Password = "Password123"
-        };
+        var registerRequest = new RegisterRequest("existinguser", "new@example.com", "Password123", "User");
 
         var validationResult = new FluentValidation.Results.ValidationResult();
         _registerValidatorMock.Setup(v => v.ValidateAsync(registerRequest, default))
