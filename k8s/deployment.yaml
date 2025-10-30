@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: binwidthcalculator-api
+  namespace: binwidthcalculator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: binwidthcalculator-api
+  template:
+    metadata:
+      labels:
+        app: binwidthcalculator-api
+    spec:
+      containers:
+      - name: api
+        image: binwidthcalculatoracr.azurecr.io/bin-width-calculator:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: Jwt__Issuer
+          value: "BinWidthCalculatorAPI"
+        - name: Jwt__Audience
+          value: "BinWidthCalculatorUsers"
+        - name: Jwt__ExpiresInHours
+          value: "12"
+        envFrom:
+        - secretRef:
+            name: binwidthcalculator-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5

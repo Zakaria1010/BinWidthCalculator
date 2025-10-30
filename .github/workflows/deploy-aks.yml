@@ -1,0 +1,115 @@
+name: Build and Deploy to AKS
+
+on:
+  push:
+    branches: [ infra/kubernetes-integration ]
+
+env:
+  REGISTRY_NAME: 'binwidthcalculatoracr'
+  IMAGE_NAME: 'bin-width-calculator'
+  K8S_NAMESPACE: 'binwidthcalculator'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+  build-and-push-docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+
+  deploy-to-aks:
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set Kubernetes context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+        cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+    - name: Deploy to Kubernetes
+      run: |
+        # Create namespace
+        kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Create secret
+        kubectl create secret generic binwidthcalculator-secrets \
+          --namespace ${{ env.K8S_NAMESPACE }} \
+          --from-literal=Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Deploy application
+        kubectl apply -f k8s/ -n ${{ env.K8S_NAMESPACE }}
+
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/binwidthcalculator-api \
+          --namespace ${{ env.K8S_NAMESPACE }} \
+          --timeout=180s
+
+    - name: Get application URL
+      run: |
+        # Get the external IP
+        kubectl get service binwidthcalculator-service -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' > ip.txt
+        IP=$(cat ip.txt)
+        echo "Application deployed: http://$IP"
+        echo "API Health: http://$IP/health"
+        echo "Swagger UI: http://$IP/swagger"
+
+    - name: Test application
+      run: |
+        IP=$(kubectl get service binwidthcalculator-service -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Testing application at: http://$IP"
+        
+        # Wait for application to be ready
+        sleep 30
+        
+        # Test basic endpoints
+        curl -f http://$IP/health && echo "Health check: PASSED" || echo "Health check: FAILED"
+        curl -f http://$IP/swagger && echo "Swagger check: PASSED" || echo "Swagger check: FAILED"
